@@ -1,0 +1,62 @@
+# Copyright © 2023 KubeCub open source community. All rights reserved.
+# Licensed under the MIT License (the "License");
+# you may not use this file except in compliance with the License.
+
+name: OpenIM Sync labels
+
+on:
+  push:
+    branches:
+      - main
+    # paths:
+    #   - .github/sync_labels.yml
+
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@1.0.0
+        - name: Github lables pull and synchronize
+          uses: kubecub/github-label-syncer@v2.0.0
+          with:
+            manifest: labels-templates/openim-yaml.yaml
+            token: ${{ secrets.BOT_GITHUB_TOKEN }}
+            repository: |
+                openimsdk/open-im-server
+                openimsdk/openkf
+                openim-sigs/oimws
+                OpenIMSDK/docs
+                OpenIMSDK/community
+                openimsdk/helm-charts
+                OpenIMSDK/openim-sdk-core
+                OpenIMSDK/chat
+                openim-sigs/cla
+                OpenIMSDK/Open-IM-SDK-iOS
+                OpenIMSDK/Open-IM-SDK-Android
+                OpenIMSDK/Open-IM-SDK-Flutter
+                OpenIMSDK/Open-IM-Uniapp-Demo
+                OpenIMSDK/Open-IM-iOS-Demo
+                OpenIMSDK/Open-IM-Android-Demo
+                OpenIMSDK/Open-IM-SDK-Uniapp
+                OpenIMSDK/cpp_go
+                OpenIMSDK/Open-IM-SDK-Web
+                OpenIMSDK/Open-IM-Flutter-Demo
+                OpenIMSDK/Open-IM-SDK-ReactNative
+                OpenIMSDK/Open-IM-PC-Web-Demo
+                OpenIMSDK/OpenIM-Docs
+                OpenIMSDK/openim-sdk-core-ios
+                OpenIMSDK/sdk_advanced_function
+                OpenIMSDK/Open-IM-SDK-Dart
+                OpenIMSDK/Open-IM-SDK-Web-Wasm
+                OpenIMSDK/open_utils
+                OpenIMSDK/open_log
+                OpenIMSDK/getcdv3
+                OpenIMSDK/Open-IM-SDK-Unity
+                OpenIMSDK/Open-IM-SDK-Core-IndexDB-Doc
+                OpenIMSDK/rockscache
+                OpenIMSDK/Open-IM-Server-k8s-deploy
+                OpenIMSDK/.github
+                OpenIMSDK/automation
+          env:
+            GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}

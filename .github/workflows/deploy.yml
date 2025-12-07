@@ -1,0 +1,50 @@
+
+name: OpenIM Deploy for dev
+
+on:
+  push:
+    branches:
+      - 'devops' # Only for the dev branch
+      - 'main'
+    paths:
+      - '.github/workflows/*'
+      # - '__test__/**' # dev No immediate testing is required
+      - 'src/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'bin/*'
+
+env:
+    SG_M1_HOST: ${{ secrets.SG_M1_HOST }}
+    SG_M1_USERNAME: ${{ secrets.SG_M1_USERNAME }}
+    SG_M1_PASSWORD: ${{ secrets.SG_M1_PASSWORD }}
+    SG_M1_PORT: 22
+
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+            OWNER: ${{ github.repository_owner }}
+            REPO: ${{ github.event.repository.name }}
+        with:
+          host: ${{ env.SG_M1_HOST }}
+          username: ${{ env.SG_M1_USERNAME }}
+          password: ${{ env.SG_M1_PASSWORD }}
+          port: ${{ env.SG_M1_PORT }}
+          envs: OWNER,REPO
+          script: |
+            mkdir -p /test/openim
+            cd /test/openim
+            pwd
+            whoami
+            ls -al
+            echo "OWNER: $OWNER"
+            echo "REPO: $REPO"
+            git clone https://github.com/${OWNER}/${REPO}.git
+            cd ${REPO}
+            docker compose up -d

@@ -1,0 +1,15 @@
+# 设置基础镜像
+FROM golang AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+ENV GOPROXY=https://goproxy.cn
+
+COPY . /app/
+
+RUN cd /app; go build -o _output/bin/exporter cmd/exporter/main.go
+
+FROM scratch
+COPY --from=builder /app/_output/bin/exporter /app
+ENTRYPOINT ["/app/exporter --help"]

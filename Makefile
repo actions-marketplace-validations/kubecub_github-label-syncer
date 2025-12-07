@@ -115,7 +115,7 @@ SPACE +=
 # ==============================================================================
 # Build definition
 
-GO_SUPPORTED_VERSIONS ?= 1.18|1.19|1.20
+GO_SUPPORTED_VERSIONS ?= 1.19|1.20|1.21|1.22|1.23
 GO_LDFLAGS += -X $(VERSION_PACKAGE).GitVersion=$(VERSION) \
 	-X $(VERSION_PACKAGE).GitCommit=$(GIT_COMMIT) \
 	-X $(VERSION_PACKAGE).GitTreeState=$(GIT_TREE_STATE) \
@@ -193,6 +193,20 @@ go.build.%:
 build-multiarch: go.build.verify $(foreach p,$(PLATFORMS),$(addprefix go.build., $(addprefix $(p)., $(BINS))))
 # ==============================================================================
 # Targets
+.PHONY: release
+release: release.verify release.ensure-tag
+	@scripts/release.sh
+
+.PHONY: install.gsemver
+release.verify: install.git-chglog install.github-release install.coscmd
+
+.PHONY: release.tag
+release.tag: install.gsemver release.ensure-tag
+	@git push origin `git describe --tags --abbrev=0`
+
+.PHONY: release.ensure-tag
+release.ensure-tag: install.gsemver
+	@scripts/ensure_tag.sh
 
 ## tidy: tidy go.mod
 .PHONY: tidy
@@ -281,51 +295,62 @@ help: Makefile
 
 BUILD_TOOLS ?= go-gitlint golangci-lint goimports addlicense deepcopy-gen conversion-gen ginkgo go-junit-report 
 
-# tools.verify.%: Check if a tool is installed and install it
+## tools: Install a must tools
+.PHONY: tools
+tools: $(addprefix tools.verify., $(BUILD_TOOLS))
+
+## tools.verify.%: Check if a tool is installed and install it
 .PHONY: tools.verify.%
 tools.verify.%:
 	@echo "===========> Verifying $* is installed"
 	@if [ ! -f $(TOOLS_DIR)/$* ]; then GOBIN=$(TOOLS_DIR) $(MAKE) tools.install.$*; fi
 	@echo "===========> $* is install in $(TOOLS_DIR)/$*"
 
-# tools: Install a must tools
-.PHONY: tools
-tools: $(addprefix tools.verify., $(BUILD_TOOLS))
-
-# tools.install.%: Install a single tool in $GOBIN/
+## tools.install.%: Install a single tool in $GOBIN/
 .PHONY: tools.install.%
 tools.install.%:
 	@echo "===========> Installing $,The default installation path is $(GOBIN)/$*"
 	@$(MAKE) install.$*
 
+## install: Install all tools
 .PHONY: install.golangci-lint
 install.golangci-lint:
 	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
+## install.goimports: Install goimports, used to format go source files
 .PHONY: install.goimports
 install.goimports:
 	@$(GO) install golang.org/x/tools/cmd/goimports@latest
 
+## install.addlicense: Install addlicense, used to add license header to source files
 .PHONY: install.addlicense
 install.addlicense:
 	@$(GO) install github.com/google/addlicense@latest
 
+## install.deepcopy-gen: Install deepcopy-gen, used to generate deepcopy functions
 .PHONY: install.deepcopy-gen
 install.deepcopy-gen:
 	@$(GO) install k8s.io/code-generator/cmd/deepcopy-gen@latest
 
+## install.conversion-gen: Install conversion-gen, used to generate conversion functions
 .PHONY: install.conversion-gen
 install.conversion-gen:
 	@$(GO) install k8s.io/code-generator/cmd/conversion-gen@latest
 
+## install.ginkgo: Install ginkgo, used to run go tests
 .PHONY: install.ginkgo
 install.ginkgo:
 	@$(GO) install github.com/onsi/ginkgo/ginkgo@v1.16.2
 
+## install.go-junit-report: Install go-junit-report, used to generate junit report
 .PHONY: install.go-gitlint
+# wget -P _output/tools/ https://openim-1306374445.cos.ap-guangzhou.myqcloud.com/openim/tools/go-gitlint
+# go install github.com/antham/go-gitlint/cmd/gitlint@latest
 install.go-gitlint:
-	@$(GO) install github.com/marmotedu/go-gitlint/cmd/go-gitlint@latest
+	@wget -q https://openim-1306374445.cos.ap-guangzhou.myqcloud.com/openim/tools/go-gitlint -O ${TOOLS_DIR}/go-gitlint
+	@chmod +x ${TOOLS_DIR}/go-gitlint
 
+## install.go-junit-report: Install go-junit-report, used to generate junit report
 .PHONY: install.go-junit-report
 install.go-junit-report:
 	@$(GO) install github.com/jstemmer/go-junit-report@latest
@@ -377,6 +402,11 @@ install.coscli:
 install.coscmd:
 	@if which pip &>/dev/null; then pip install coscmd; else pip3 install coscmd; fi
 
+## install.minio: Install minio, used to upload files to minio
+.PHONY: install.minio
+install.minio:
+	@$(GO) install github.com/minio/minio@latest
+
 ## install.delve: Install delve, used to debug go program
 .PHONY: install.delve
 install.delve:
@@ -422,12 +452,17 @@ install.protoc-gen-go:
 ## install.cfssl: Install cfssl, used to generate certificates
 .PHONY: install.cfssl
 install.cfssl:
-	@$(ROOT_DIR)/script/install/install.sh iam::install::install_cfssl
+	@$(ROOT_DIR)/script/install/install.sh kubecub::install::install_cfssl
 
 ## install.depth: Install depth, used to check dependency tree
 .PHONY: install.depth
 install.depth:
 	@$(GO) install github.com/KyleBanks/depth/cmd/depth@latest
+
+## install.ko: Install ko, used to build go program into container images
+.PHONY: install.ko
+install.ko:
+	@$(GO) install github.com/google/ko@latest
 
 ## install.go-callvis: Install go-callvis, used to visualize call graph
 .PHONY: install.go-callvis
